@@ -1,0 +1,6 @@
+{
+  "python.analysis.extraPaths": [
+    "C:/Users/amant/Desktop/csiro_segmentation/src"
+  ],
+  "python.languageServer": "Pylance"
+}
