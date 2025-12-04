@@ -6,20 +6,17 @@ import pandas as pd
 from hybrid_features import HybridFeatureExtractor
 from metadata_features import MetadataProcessor
 
-
 # -------------------------------
-# LOAD SAVED MODELS
+# LOAD MODELS (NO PCA ANYMORE)
 # -------------------------------
 MODELS_DIR = "models"
 
-pca = pickle.load(open(os.path.join(MODELS_DIR, "pca_final.pkl"), "rb"))
 scaler = pickle.load(open(os.path.join(MODELS_DIR, "scaler_final.pkl"), "rb"))
-models = pickle.load(open(os.path.join(MODELS_DIR, "regressor_final.pkl"), "rb"))   # dict of 5 models
+models = pickle.load(open(os.path.join(MODELS_DIR, "regressor_final.pkl"), "rb"))
 meta_processor = pickle.load(open(os.path.join(MODELS_DIR, "metadata_processor.pkl"), "rb"))
 
-# Hybrid extractor (SAM + ResNet)
+# Hybrid extractor (SAM + ResNet50)
 extractor = HybridFeatureExtractor()
-
 
 TARGETS = [
     "Dry_Clover_g",
@@ -29,18 +26,18 @@ TARGETS = [
     "GDM_g"
 ]
 
-
 # -------------------------------
 # AUTO METADATA FROM CSV
 # -------------------------------
 def auto_metadata(image_path):
     df = pd.read_csv("data/final_metadata_clean_FIXED.csv")
 
-    name = os.path.basename(image_path).replace(".jpg", "")
-    row = df[df["image_path"].str.contains(name)]
+    img_name = os.path.basename(image_path)
+
+    row = df[df["image_path"].str.contains(img_name)]
 
     if len(row) == 0:
-        print("[WARN] Metadata not found, using default safe values!")
+        print("[WARN] Metadata not found, using safe defaults!")
         return {
             "Pre_GSHH_NDVI": 0.5,
             "Height_Ave_cm": 5,
@@ -65,37 +62,34 @@ def auto_metadata(image_path):
         "season": row["season"]
     }
 
-
 # -------------------------------
 # FINAL PREDICT FUNCTION
 # -------------------------------
 def predict_image(image_path):
 
+    # Fix path
+    img_path = image_path.replace("train/", "data/train/")
+
     print("[INFO] Extracting hybrid features...")
-    feat = extractor.extract(image_path)
+    feat = extractor.extract(img_path)
     feat = np.nan_to_num(feat)
 
     meta = auto_metadata(image_path)
     meta_df = pd.DataFrame([meta])
 
-    # Convert meta → vector
     meta_vec = meta_processor.transform(meta_df)[0]
 
-    # Merge
+    # Combine features
     full = np.hstack([feat, meta_vec])
+    full_scaled = scaler.transform([full])[0]
 
-    # Scale + PCA
-    full_scaled = scaler.transform([full])
-    full_pca = pca.transform(full_scaled)[0]
-
-    # Predict 5 targets
     preds = {}
 
     for t in TARGETS:
-        preds[t] = float(models[t].predict([full_pca])[0])
+        val = float(models[t].predict([full_scaled])[0])
+        preds[t] = max(val, 0)  # No negative biomass
 
     return meta, preds
-
 
 # -------------------------------
 # MAIN
@@ -107,14 +101,8 @@ if __name__ == "__main__":
     metadata, pred = predict_image(img)
 
     print("\n====== FINAL OUTPUT (Auto Metadata) ======")
-    print(f"NDVI: {metadata['Pre_GSHH_NDVI']}")
-    print(f"Height: {metadata['Height_Ave_cm']}")
-    print(f"State: {metadata['State']}")
-    print(f"Species: {metadata['Species']}")
-    print(f"Year: {metadata['year']}")
-    print(f"Month: {metadata['month']}")
-    print(f"DayOfYear: {metadata['day_of_year']}")
-    print(f"Season: {metadata['season']}")
+    for k, v in metadata.items():
+        print(f"{k}: {v}")
 
     print("\n---- Biomass Predictions ----")
     for name, value in pred.items():
@@ -122,36 +110,37 @@ if __name__ == "__main__":
 
     print("======================================\n")
 
-import pandas as pd
-import os
-from predict_final import predict_image   # your function
 
-TEST_IMAGES_FOLDER = "data/test/"       # <-- change if needed
-TEST_CSV = "data/test.csv"
+# import pandas as pd
+# import os
+# from predict_final import predict_image   # your function
 
-# Load test.csv
-test_df = pd.read_csv(TEST_CSV)
+# TEST_IMAGES_FOLDER = "data/test/"       # <-- change if needed
+# TEST_CSV = "data/test.csv"
 
-rows = []
+# # Load test.csv
+# test_df = pd.read_csv(TEST_CSV)
 
-print("[INFO] Starting prediction on full test set...")
+# rows = []
 
-for img_name in test_df['sample_id']:     # your test.csv column
+# print("[INFO] Starting prediction on full test set...")
+
+# for img_name in test_df['sample_id']:     # your test.csv column
     
-    image_path = os.path.join(TEST_IMAGES_FOLDER, img_name + ".jpg")
+#     image_path = os.path.join(TEST_IMAGES_FOLDER, img_name + ".jpg")
 
-    # Run your model
-    metadata, pred = predict_image(image_path)
+#     # Run your model
+#     metadata, pred = predict_image(image_path)
 
-    # Append in LONG format
-    rows.append([f"{img_name}__Dry_Clover_g", pred["Dry_Clover_g"]])
-    rows.append([f"{img_name}__Dry_Dead_g", pred["Dry_Dead_g"]])
-    rows.append([f"{img_name}__Dry_Green_g", pred["Dry_Green_g"]])
-    rows.append([f"{img_name}__Dry_Total_g", pred["Dry_Total_g"]])
-    rows.append([f"{img_name}__GDM_g", pred["GDM_g"]])
+#     # Append in LONG format
+#     rows.append([f"{img_name}__Dry_Clover_g", pred["Dry_Clover_g"]])
+#     rows.append([f"{img_name}__Dry_Dead_g", pred["Dry_Dead_g"]])
+#     rows.append([f"{img_name}__Dry_Green_g", pred["Dry_Green_g"]])
+#     rows.append([f"{img_name}__Dry_Total_g", pred["Dry_Total_g"]])
+#     rows.append([f"{img_name}__GDM_g", pred["GDM_g"]])
 
-# Convert to dataframe
-df = pd.DataFrame(rows, columns=["sample_id", "target"])
-df.to_csv("submission.csv", index=False)
+# # Convert to dataframe
+# df = pd.DataFrame(rows, columns=["sample_id", "target"])
+# df.to_csv("submission.csv", index=False)
 
-print("[SUCCESS] submission.csv generated successfully!")
+# print("[SUCCESS] submission.csv generated successfully!")
