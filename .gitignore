@@ -1,6 +1,13 @@
 checkpoints/
+models/
+outputs/
+*.csv
 *.pth
+*.pt
 *.h5
+*.safetensors
+*.pb
+*.pkl
 
 # Python cache
 __pycache__/

@@ -48,32 +48,37 @@ python src/predict_final.py
 python src/generate_submission.py
 ```
 
-## Handling model weights and large binaries
+## Local model weight setup
 
-Model weights (e.g. `.pth`, `.pt`, `.h5`, `.safetensors`) are large and typically should not be committed to the main Git history. You have two recommended options:
+This repository does not store trained model weights. Place the required files locally in the folders below:
 
-- Use Git LFS (recommended if you want to keep weights linked to the repo):
+- `checkpoints/sam_vit_b.pth`
+- `models/regressor.pkl`
+- `models/pca.pkl`
+- `models/hybrid_pca_regressor.pkl`
+- `models/pca_with_metadata.pkl`
+- `models/lgbm_with_metadata.pkl`
+- `models/metadata_processor.pkl`
+- `models/efficientnet_b3/model.safetensors`
 
-  ```bash
-  # install and enable LFS locally
-  git lfs install
-  # track common weight file extensions
-  git lfs track "*.pth" "*.pt" "*.h5" "*.safetensors" "*.pb" "*.pkl"
-  git add .gitattributes
-  git commit -m "Track model weights with Git LFS"
-  ```
+Create the directories if they do not exist:
 
-  Note: After enabling LFS locally, add and push weight files as usual; they will be stored via LFS. Make sure your Git host (GitHub) supports LFS and that you understand any storage limits or billing implications.
+```bash
+mkdir -p checkpoints models/efficientnet_b3
+```
 
-- Or host weights externally and download them at setup time (avoids storing large files in the repo):
-  - We provide helper scripts in `scripts/download_weights.sh` and `scripts/download_weights.ps1`. Edit the `DOWNLOAD_URLS` list to point to your hosted model files (S3, Google Drive, huggingface, etc.) and run the script to populate `checkpoints/` or `models/`.
+Then validate local placement with the helper script:
 
-  ```bash
-  # Linux/macOS
-  bash scripts/download_weights.sh
+```bash
+bash scripts/validate_weights.sh
+```
 
-  # Windows (PowerShell)
-  powershell -ExecutionPolicy Bypass -File scripts\download_weights.ps1
-  ```
+Or on Windows:
 
-Choose the approach that matches your workflow; if you want, I can enable Git LFS for this repo and migrate any existing large files into LFS for you.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\validate_weights.ps1
+```
+
+If the script reports any missing files, add the required weights to the expected paths and run the command again.
+
+> Remember: these model files are intentionally kept out of git to avoid large repository history and storage issues.
