@@ -5,13 +5,3 @@ checkpoints/
 # Python cache
 __pycache__/
 *.py[cod]
-
-# Ignore model binaries and large outputs
-models/
-*.safetensors
-*.pb
-outputs/
-
-# IDE/editor
-/.vscode/
-.vscode/
