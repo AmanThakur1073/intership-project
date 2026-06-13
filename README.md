@@ -1,21 +1,33 @@
 # CSIRO Segmentation
 
-Simple project to segment grass images into classes like:
+## Project Overview
 
-- Green Grass
-- Dry Grass
-- Clover
-- Dry Clover
-- Weeds
-- Soil
+This repository implements a hybrid image segmentation and biomass estimation pipeline for grassland images. It combines:
 
-Structure:
+- **SAM segmentation** for extracting image region features from vegetation images
+- **ResNet / EfficientNet feature extraction** for visual embeddings
+- **LightGBM multi-output regression** to predict biomass targets such as `Dry_Clover_g`, `Dry_Dead_g`, `Dry_Green_g`, `Dry_Total_g`, and `GDM_g`
+- **Metadata features** drawn from the provided CSV metadata to improve predictions
 
-## Web UI (Streamlit)
+The input dataset is stored under `data/`, containing image files, labels, and cleaned metadata. The final app uses these signals to generate segmentation overlays and prediction outputs.
 
-A simple Streamlit app has been added to provide an accessible frontend for running predictions.
+## Key Features
 
-Quick start:
+- Streamlit web UI for image upload and prediction
+- Mask/overlay generation for segmentation visualization
+- Hybrid pipeline using both image features and tabular metadata
+- Local model weight setup so large binaries are kept out of git
+
+## Folder structure
+
+- `data/` — raw dataset files, image folders, training/test CSVs, and metadata
+- `src/` — project source code, training/prediction scripts, and feature extraction logic
+- `models/` — local trained model files and regressors (not tracked in git)
+- `checkpoints/` — local SAM checkpoint weights (not tracked in git)
+- `outputs/` — generated masks, overlays, and submission CSVs (ignored by git)
+- `scripts/` — helper scripts for validating local weight placement
+
+## Quick start
 
 1. Install dependencies:
 
@@ -29,23 +41,31 @@ pip install -r requirements.txt
 streamlit run src/web_app.py
 ```
 
+3. Use the app to upload an image or enter a local path, for example `data/test/your.jpg`.
+
 Notes:
 
-- Use the app to upload an image or enter a local path pointing into the workspace (e.g., `data/test/your.jpg`).
 - If `lightgbm` fails to install on Windows, consider using conda: `conda install -c conda-forge lightgbm`.
 
-## Generated outputs
+## Example outputs
 
-Model outputs (masks, overlays) and result CSVs are stored under the `outputs/` folder and as CSV files (for example `submission.csv`). These files are intentionally not tracked in the repository to avoid committing large binaries or generated artifacts.
+This project generates:
 
-To regenerate outputs locally, run the prediction/generation scripts (ensure model weights in `checkpoints/` and `models/` are available):
+- segmentation mask images in `outputs/masks/`
+- overlay visualizations in `outputs/overlays/`
+- submission CSVs such as `submission.csv`
+
+Run the prediction pipeline locally to produce these files. Because generated artifacts are intentionally excluded from git, reviewers can reproduce them by following the setup steps.
+
+## Results and evaluation
+
+The training pipeline includes evaluation using validation MSE and R² metrics. Sample evaluation is produced by the training scripts in `src/train_regressor.py` and `src/train_hybrid.py`.
+
+To reproduce training metrics, run the training script and review the printed validation results:
 
 ```bash
-# run full prediction that writes overlays/masks into `outputs/`
-python src/predict_final.py
-
-# or generate the submission CSV only
-python src/generate_submission.py
+python src/train_regressor.py
+python src/train_hybrid.py
 ```
 
 ## Local model weight setup
@@ -67,7 +87,7 @@ Create the directories if they do not exist:
 mkdir -p checkpoints models/efficientnet_b3
 ```
 
-Then validate local placement with the helper script:
+Validate local placement with the helper script:
 
 ```bash
 bash scripts/validate_weights.sh
@@ -81,4 +101,4 @@ powershell -ExecutionPolicy Bypass -File scripts\validate_weights.ps1
 
 If the script reports any missing files, add the required weights to the expected paths and run the command again.
 
-> Remember: these model files are intentionally kept out of git to avoid large repository history and storage issues.
+> We keep weights out of git so the repository remains lightweight and easy to review.
