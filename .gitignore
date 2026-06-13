@@ -1,6 +1,7 @@
 checkpoints/
 models/
 outputs/
+.vscode/
 *.csv
 *.pth
 *.pt
