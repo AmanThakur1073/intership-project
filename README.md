@@ -9,7 +9,7 @@ This repository implements a hybrid image segmentation and biomass estimation pi
 - **LightGBM multi-output regression** to predict biomass targets such as `Dry_Clover_g`, `Dry_Dead_g`, `Dry_Green_g`, `Dry_Total_g`, and `GDM_g`
 - **Metadata features** drawn from the provided CSV metadata to improve predictions
 
-The input dataset is stored under `data/`, containing image files, labels, and cleaned metadata. The final app uses these signals to generate segmentation overlays and prediction outputs.
+The input dataset is stored under `data/`, containing image files, labels, and cleaned metadata. The final app uses these signals to generate segmentation overlays and prediction outputs. For repo hygiene, only a small demo subset remains in `data/train/`, and the full training dataset is archived locally at `data/archive/train_full/`.
 
 ## Key Features
 
@@ -21,6 +21,8 @@ The input dataset is stored under `data/`, containing image files, labels, and c
 ## Folder structure
 
 - `data/` — raw dataset files, image folders, training/test CSVs, and metadata
+- `data/demo/` — small sample images for quick local testing and UI preview
+- `data/archive/` — archived full training dataset kept out of git for repo size control
 - `src/` — project source code, training/prediction scripts, and feature extraction logic
 - `models/` — local trained model files and regressors (not tracked in git)
 - `checkpoints/` — local SAM checkpoint weights (not tracked in git)

@@ -10,13 +10,11 @@ outputs/
 *.pb
 *.pkl
 
+data/archive/
+
 # Python cache
 __pycache__/
 *.py[cod]
 
 # Generated outputs and tabular results
 outputs/
-*.csv
-
-# Keep only demo images; ignore full training set
-data/train/
