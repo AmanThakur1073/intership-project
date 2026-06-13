@@ -1,3 +1,7 @@
 checkpoints/
 *.pth
 *.h5
+
+# Python cache
+__pycache__/
+*.py[cod]
